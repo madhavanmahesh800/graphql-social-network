@@ -65,11 +65,7 @@ const Profile = () => {
       refetchMyFollowing();
     },
     onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+      console.error("Follow error:", error);
     },
   });
 
@@ -84,11 +80,7 @@ const Profile = () => {
       refetchMyFollowing();
     },
     onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+      console.error("Unfollow error:", error);
     },
   });
 
@@ -102,11 +94,7 @@ const Profile = () => {
       setDialogOpen(false);
     },
     onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+      console.error("Update profile error:", error);
     },
   });
 
@@ -175,11 +163,12 @@ const Profile = () => {
   }
 
   if (error) {
+    console.error("Profile error:", error);
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
         <div className="text-center">
           <h2 className="text-xl font-bold">Error loading profile</h2>
-          <p className="text-muted-foreground">{error.message}</p>
+          <p className="text-muted-foreground">Please try again later</p>
         </div>
       </div>
     );
@@ -314,19 +303,12 @@ const Profile = () => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="posts">
+      <Tabs defaultValue="followers">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="followers">Followers</TabsTrigger>
           <TabsTrigger value="following">Following</TabsTrigger>
         </TabsList>
-        <TabsContent value="posts" className="pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="flex items-center justify-center p-8 text-center">
-              <p className="text-muted-foreground">No posts to show</p>
-            </Card>
-          </div>
-        </TabsContent>
+        
         <TabsContent value="followers" className="pt-4">
           <div className="space-y-4">
             {followers.length === 0 ? (
@@ -380,6 +362,7 @@ const Profile = () => {
             )}
           </div>
         </TabsContent>
+        
         <TabsContent value="following" className="pt-4">
           <div className="space-y-4">
             {following.length === 0 ? (

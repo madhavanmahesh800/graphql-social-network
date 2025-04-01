@@ -41,11 +41,7 @@ const UserSearch = () => {
       getFollowing();
     },
     onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+      console.error("Follow error:", error);
     },
   });
   
@@ -59,11 +55,7 @@ const UserSearch = () => {
       getFollowing();
     },
     onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+      console.error("Unfollow error:", error);
     },
   });
   
