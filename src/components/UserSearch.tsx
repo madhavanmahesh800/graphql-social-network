@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useLazyQuery, useMutation } from "@apollo/client";
-import { SEARCH_USERS, FOLLOW_USER, UNFOLLOW_USER, GET_FOLLOWERS, GET_FOLLOWING } from "@/lib/graphql";
+import { getUserProfile, followUser as apiFollowUser, unfollowUser as apiUnfollowUser, getFollowing } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -13,95 +12,102 @@ import { Link } from "react-router-dom";
 const UserSearch = () => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchResult, setSearchResult] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
+  const [following, setFollowing] = useState<string[]>([]);
+  const [followers, setFollowers] = useState<string[]>([]);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [unfollowLoading, setUnfollowLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [searchUsers, { data, loading }] = useLazyQuery(SEARCH_USERS, {
-    variables: { searchTerm },
-    fetchPolicy: "network-only",
-  });
+  const fetchFollowData = async () => {
+    try {
+      const followingData = await getFollowing();
+      setFollowing(followingData || []);
+      // For followers, you might need a similar function - for now using an empty array
+      setFollowers([]);
+    } catch (error) {
+      console.error("Error fetching follow data:", error);
+    }
+  };
   
-  const [getFollowers, { data: followersData }] = useLazyQuery(GET_FOLLOWERS, {
-    variables: { username: user?.username },
-    fetchPolicy: "network-only",
-  });
+  const handleSearch = async (value: string) => {
+    setSearchTerm(value);
+    
+    if (value.length < 2) {
+      setSearchResult(null);
+      return;
+    }
+    
+    try {
+      setSearching(true);
+      const profile = await getUserProfile(value);
+      if (profile) {
+        // Format result to match expected structure
+        setSearchResult([profile]);
+      } else {
+        setSearchResult([]);
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResult([]);
+    } finally {
+      setSearching(false);
+    }
+  };
   
-  const [getFollowing, { data: followingData }] = useLazyQuery(GET_FOLLOWING, {
-    variables: { username: user?.username },
-    fetchPolicy: "network-only",
-  });
-  
-  const [followUser, { loading: followLoading }] = useMutation(FOLLOW_USER, {
-    onCompleted: () => {
+  const handleFollow = async (username: string) => {
+    try {
+      setFollowLoading(true);
+      await apiFollowUser(username);
       toast({
         title: "Success",
-        description: "User followed successfully",
+        description: `You are now following ${username}`,
       });
-      getFollowers();
-      getFollowing();
-    },
-    onError: (error) => {
+      await fetchFollowData();
+    } catch (error) {
       console.error("Follow error:", error);
-    },
-  });
+    } finally {
+      setFollowLoading(false);
+    }
+  };
   
-  const [unfollowUser, { loading: unfollowLoading }] = useMutation(UNFOLLOW_USER, {
-    onCompleted: () => {
+  const handleUnfollow = async (username: string) => {
+    try {
+      setUnfollowLoading(true);
+      await apiUnfollowUser(username);
       toast({
         title: "Success",
         description: "User unfollowed successfully",
       });
-      getFollowers();
-      getFollowing();
-    },
-    onError: (error) => {
+      await fetchFollowData();
+    } catch (error) {
       console.error("Unfollow error:", error);
-    },
-  });
-  
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    if (value.length >= 2) {
-      searchUsers();
+    } finally {
+      setUnfollowLoading(false);
     }
   };
   
-  const handleFollow = (username: string) => {
-    followUser({
-      variables: {
-        target: username,
-      },
-    });
-  };
-  
-  const handleUnfollow = (username: string) => {
-    unfollowUser({
-      variables: {
-        target: username,
-      },
-    });
-  };
-  
   const isFollowing = (username: string) => {
-    if (!followingData?.getFollowing) return false;
-    return followingData.getFollowing.includes(username);
+    if (!following) return false;
+    return following.includes(username);
   };
   
   const isFollower = (username: string) => {
-    if (!followersData?.getFollowers) return false;
-    return followersData.getFollowers.includes(username);
+    if (!followers) return false;
+    return followers.includes(username);
   };
   
   // Fetch follow data when dialog opens
   const handleOpenChange = (open: boolean) => {
     setOpen(open);
     if (open) {
-      getFollowers();
-      getFollowing();
+      fetchFollowData();
     }
   };
   
-  const users = data?.searchUsers || [];
+  const users = searchResult || [];
   
   return (
     <>
@@ -137,7 +143,7 @@ const UserSearch = () => {
           )}
         </div>
         <CommandList>
-          {loading ? (
+          {searching ? (
             <div className="flex items-center justify-center p-4">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
@@ -151,7 +157,7 @@ const UserSearch = () => {
             <CommandGroup>
               {users.map((user) => (
                 <CommandItem 
-                  key={user._id}
+                  key={user._id || user.username}
                   className="flex items-center justify-between p-2"
                   onSelect={() => {}}
                 >
