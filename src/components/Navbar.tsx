@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CircleUser, LogOut, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { CircleUser, LogOut } from "lucide-react";
+import UserSearch from "@/components/UserSearch";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -16,9 +16,8 @@ const Navbar = () => {
           <Link to="/feed" className="flex items-center text-xl font-bold tracking-tight">
             <span className="text-primary">GraphQL</span>Social
           </Link>
-          <div className="hidden md:flex items-center rounded-md border">
-            <Search className="mx-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input className="h-9 w-[200px] lg:w-[300px] border-none bg-transparent focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-transparent" placeholder="Search..." />
+          <div className="hidden md:flex items-center">
+            <UserSearch />
           </div>
         </div>
         <div className="flex items-center gap-2">

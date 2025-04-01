@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
-import { CircleUser, Edit, UserPlus, UserMinus, Loader2 } from "lucide-react";
+import { CircleUser, Edit, UserPlus, UserMinus, UserCheck, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,12 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { UPDATE_PROFILE } from "@/lib/graphql";
+import { Link } from "react-router-dom";
 
 const Profile = () => {
   const { username } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowedBy, setIsFollowedBy] = useState(false);
   const [description, setDescription] = useState("");
   const [profilePhoto, setProfilePhoto] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -30,8 +32,27 @@ const Profile = () => {
     fetchPolicy: "network-only",
   });
 
-  const { data: followersData } = useQuery(GET_FOLLOWERS);
-  const { data: followingData } = useQuery(GET_FOLLOWING);
+  const { data: followersData, refetch: refetchFollowers } = useQuery(GET_FOLLOWERS, {
+    variables: { username },
+    fetchPolicy: "network-only",
+  });
+
+  const { data: followingData, refetch: refetchFollowing } = useQuery(GET_FOLLOWING, {
+    variables: { username },
+    fetchPolicy: "network-only",
+  });
+
+  const { data: myFollowingData, refetch: refetchMyFollowing } = useQuery(GET_FOLLOWING, {
+    variables: { username: user?.username },
+    skip: !user?.username,
+    fetchPolicy: "network-only",
+  });
+
+  const { data: myFollowersData, refetch: refetchMyFollowers } = useQuery(GET_FOLLOWERS, {
+    variables: { username: user?.username },
+    skip: !user?.username,
+    fetchPolicy: "network-only",
+  });
 
   const [followUser, { loading: followLoading }] = useMutation(FOLLOW_USER, {
     onCompleted: () => {
@@ -40,6 +61,8 @@ const Profile = () => {
         title: "Success",
         description: `You are now following ${username}`,
       });
+      refetchFollowers();
+      refetchMyFollowing();
     },
     onError: (error) => {
       toast({
@@ -57,6 +80,8 @@ const Profile = () => {
         title: "Success",
         description: `You have unfollowed ${username}`,
       });
+      refetchFollowers();
+      refetchMyFollowing();
     },
     onError: (error) => {
       toast({
@@ -86,11 +111,18 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    if (followersData) {
-      const followers = followersData.getFollowers || [];
-      setIsFollowing(followers.includes(username));
+    if (myFollowingData?.getFollowing && username) {
+      const following = myFollowingData.getFollowing || [];
+      setIsFollowing(following.includes(username));
     }
-  }, [followersData, username]);
+  }, [myFollowingData, username]);
+
+  useEffect(() => {
+    if (myFollowersData?.getFollowers && username) {
+      const followers = myFollowersData.getFollowers || [];
+      setIsFollowedBy(followers.includes(username));
+    }
+  }, [myFollowersData, username]);
 
   useEffect(() => {
     if (data?.getUserProfile) {
@@ -122,6 +154,16 @@ const Profile = () => {
         profilePhoto,
       },
     });
+  };
+
+  const refetchAll = () => {
+    refetch();
+    refetchFollowers();
+    refetchFollowing();
+    if (user?.username) {
+      refetchMyFollowers();
+      refetchMyFollowing();
+    }
   };
 
   if (loading) {
@@ -233,7 +275,7 @@ const Profile = () => {
                     </DialogContent>
                   </Dialog>
                 ) : (
-                  <>
+                  <div className="flex gap-2 flex-wrap justify-center md:justify-start">
                     {isFollowing ? (
                       <Button
                         variant="outline"
@@ -256,13 +298,15 @@ const Profile = () => {
                       >
                         {followLoading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isFollowedBy ? (
+                          <UserCheck className="h-4 w-4" />
                         ) : (
                           <UserPlus className="h-4 w-4" />
                         )}
-                        Follow
+                        {isFollowedBy ? "Follow Back" : "Follow"}
                       </Button>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             </div>
@@ -293,7 +337,7 @@ const Profile = () => {
               followers.map((follower) => (
                 <Card key={follower}>
                   <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <Link to={`/profile/${follower}`} className="flex items-center gap-3">
                       <Avatar>
                         <AvatarFallback>
                           <CircleUser className="h-5 w-5" />
@@ -302,7 +346,34 @@ const Profile = () => {
                       <div>
                         <p className="font-medium">{follower}</p>
                       </div>
-                    </div>
+                    </Link>
+                    
+                    {follower !== user?.username && (
+                      myFollowingData?.getFollowing?.includes(follower) ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1"
+                          onClick={() => {
+                            unfollowUser({ variables: { target: follower } });
+                          }}
+                        >
+                          <UserMinus className="h-4 w-4" />
+                          Unfollow
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          className="gap-1"
+                          onClick={() => {
+                            followUser({ variables: { target: follower } });
+                          }}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Follow
+                        </Button>
+                      )
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -319,7 +390,7 @@ const Profile = () => {
               following.map((followedUser) => (
                 <Card key={followedUser}>
                   <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <Link to={`/profile/${followedUser}`} className="flex items-center gap-3">
                       <Avatar>
                         <AvatarFallback>
                           <CircleUser className="h-5 w-5" />
@@ -328,7 +399,21 @@ const Profile = () => {
                       <div>
                         <p className="font-medium">{followedUser}</p>
                       </div>
-                    </div>
+                    </Link>
+                    
+                    {followedUser !== user?.username && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-1"
+                        onClick={() => {
+                          unfollowUser({ variables: { target: followedUser } });
+                        }}
+                      >
+                        <UserMinus className="h-4 w-4" />
+                        Unfollow
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))

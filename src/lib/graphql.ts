@@ -43,16 +43,28 @@ export const UPDATE_PROFILE = gql`
   }
 `;
 
+// Search query
+export const SEARCH_USERS = gql`
+  query SearchUsers($searchTerm: String!) {
+    searchUsers(searchTerm: $searchTerm) {
+      _id
+      username
+      profile_photo
+      description
+    }
+  }
+`;
+
 // Follow queries and mutations
 export const GET_FOLLOWERS = gql`
-  query GetFollowers {
-    getFollowers
+  query GetFollowers($username: String!) {
+    getFollowers(username: $username)
   }
 `;
 
 export const GET_FOLLOWING = gql`
-  query GetFollowing {
-    getFollowing
+  query GetFollowing($username: String!) {
+    getFollowing(username: $username)
   }
 `;
 
