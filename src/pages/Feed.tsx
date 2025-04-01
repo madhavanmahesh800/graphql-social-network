@@ -58,6 +58,22 @@ const Feed = () => {
 
   const posts = data?.getPostsForFollowers || [];
 
+  // Helper function to safely format timestamps
+  const formatTimestamp = (timestamp) => {
+    try {
+      // Check if timestamp is a valid number
+      const date = new Date(parseInt(timestamp));
+      // Verify if date is valid before formatting
+      if (!isNaN(date.getTime())) {
+        return formatDistanceToNow(date, { addSuffix: true });
+      }
+      return "some time ago"; // Fallback for invalid dates
+    } catch (error) {
+      console.error("Error formatting timestamp:", error, timestamp);
+      return "some time ago"; // Fallback
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-3 gap-6">
       <div className="md:col-span-2 space-y-8">
@@ -93,7 +109,7 @@ const Feed = () => {
                       {post.owner.username}
                     </Link>
                     <p className="text-muted-foreground text-xs">
-                      {formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })}
+                      {formatTimestamp(post.timestamp)}
                     </p>
                   </div>
                 </div>
