@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { LOGIN } from "@/lib/graphql";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
-import jwt_decode from "jwt-decode";
+import { jwtDecode } from "jwt-decode"; // Changed from import jwt_decode from "jwt-decode"
 
 type DecodedToken = {
   username: string;
@@ -28,7 +28,7 @@ const Login = () => {
     onCompleted: (data) => {
       const token = data.login;
       try {
-        const decoded = jwt_decode<DecodedToken>(token);
+        const decoded = jwtDecode<DecodedToken>(token);
         login(token, decoded.username);
       } catch (error) {
         toast({
