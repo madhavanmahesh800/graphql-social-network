@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CircleUser, LogOut } from "lucide-react";
+import { CircleUser, LogOut, PlusCircle } from "lucide-react";
 import UserSearch from "@/components/UserSearch";
 
 const Navbar = () => {
@@ -16,11 +16,16 @@ const Navbar = () => {
           <Link to="/feed" className="flex items-center text-xl font-bold tracking-tight">
             <span className="text-primary">GraphQL</span>Social
           </Link>
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center w-full max-w-sm">
             <UserSearch />
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="icon">
+            <Link to="/create-post">
+              <PlusCircle className="h-5 w-5" />
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="icon">
               <Link to={`/profile/${user?.username}`}>

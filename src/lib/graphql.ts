@@ -68,6 +68,12 @@ export const GET_FOLLOWING = gql`
   }
 `;
 
+export const IS_FOLLOWING = gql`
+  query IsFollowing($target: String!) {
+    isFollowing(target: $target)
+  }
+`;
+
 export const FOLLOW_USER = gql`
   mutation FollowUser($target: String!) {
     followUser(target: $target)
